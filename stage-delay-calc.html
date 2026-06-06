@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stage Delay Calc</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #1a1a1a;
+    --bg3: #242424;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --accent: #e8ff47;
+    --accent-dim: rgba(232,255,71,0.12);
+    --danger: #ff5f5f;
+    --success: #4dff9e;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  header h1 {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  header h1 span {
+    color: var(--accent);
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--text3);
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Result cards */
+  .results {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+  }
+
+  .result-card.primary {
+    grid-column: span 2;
+    background: var(--accent-dim);
+    border-color: rgba(232,255,71,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.4rem;
+  }
+
+  .result-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .result-card.primary .label {
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .result-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .result-card.primary .value {
+    font-size: clamp(2.4rem, 8vw, 3.2rem);
+    color: var(--accent);
+  }
+
+  .result-card .unit {
+    font-size: 13px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  .result-card.primary .unit {
+    font-size: 15px;
+    color: rgba(232,255,71,0.5);
+  }
+
+  .result-card.danger .value { color: var(--danger); }
+  .result-card.danger { border-color: rgba(255,95,95,0.25); background: rgba(255,95,95,0.07); }
+
+  /* Sections */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 0.8rem 1.2rem;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-header svg {
+    opacity: 0.5;
+  }
+
+  .field {
+    padding: 0.85rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field:last-child { border-bottom: none; }
+
+  .field label {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .field label small {
+    display: block;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  input[type="number"] {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 7px 10px;
+    width: 88px;
+    text-align: right;
+    outline: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(232,255,71,0.15);
+  }
+
+  input[type="number"]::placeholder { color: var(--text3); font-weight: 400; }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    outline: none;
+    border: 1px solid var(--border);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 1px rgba(232,255,71,0.4);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 3px solid var(--bg);
+  }
+
+  .range-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 50px;
+    text-align: right;
+  }
+
+  /* Weather button */
+  .weather-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .weather-status {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+
+  .weather-status.ok { color: var(--success); }
+  .weather-status.err { color: var(--danger); }
+
+  .btn-fetch {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 9px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+
+  .btn-fetch:active { opacity: 0.75; }
+  .btn-fetch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Formula box */
+  .formula-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem;
+  }
+
+  .formula-box .f-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 0.8rem;
+  }
+
+  .formula-lines {
+    font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text2);
+  }
+
+  .formula-lines strong {
+    color: var(--accent);
+    font-size: 15px;
+  }
+
+  .formula-lines .neg {
+    color: var(--danger);
+    font-size: 11px;
+  }
+
+  .hint {
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.7;
+  }
+
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  @media (max-width: 400px) {
+    main { padding: 1rem; }
+    header { padding: 1.5rem 1rem 1rem; }
+    .field { padding: 0.75rem 1rem; }
+    input[type="number"] { width: 76px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Stage<br><span>Delay</span></h1>
+  <p>PA késleltetés<br>kalkulátor</p>
+</header>
+
+<main>
+
+  <!-- Results -->
+  <div class="results">
+    <div class="result-card primary" id="card-primary">
+      <div>
+        <div class="label">PA delay</div>
+        <div class="value" id="r-result">—</div>
+        <div class="unit">ms</div>
+      </div>
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" opacity="0.3">
+        <circle cx="24" cy="24" r="20" stroke="#e8ff47" stroke-width="1.5"/>
+        <path d="M24 14v10l6 4" stroke="#e8ff47" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="result-card">
+      <div class="label">Hangsebesség</div>
+      <div class="value" id="r-speed">—</div>
+      <div class="unit">m/s</div>
+    </div>
+    <div class="result-card">
+      <div class="label">ms / méter</div>
+      <div class="value" id="r-msperm">—</div>
+      <div class="unit">aktuális</div>
+    </div>
+  </div>
+
+  <!-- Weather fetch -->
+  <div class="weather-bar">
+    <div class="weather-status" id="w-status">Nyomj az "Lekérés" gombra a helyi hőmérséklet és légnyomás betöltéséhez.</div>
+    <button class="btn-fetch" id="fetch-btn" onclick="fetchWeather()">Lekérés</button>
+  </div>
+
+  <!-- Hangforrás -->
+  <div class="section">
+    <div class="section-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      Hangforrás a színpadon
+    </div>
+    <div class="field">
+      <label>
+        Hangforrás távolsága (X)
+        <small>méter — a nullponttól mérve</small>
+      </label>
+      <input type="number" id="x-dist" value="5" step="0.1" min="0" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>
+        Nullpont offset
+        <small>méter — szub a szinpad mögött</small>
+      </label>
+      <input type="number" id="null-offset" value="0.20" step="0.01" min="0" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>
+        Keverő latency
+        <small>ms</small>
+      </label>
+      <input type="number" id="mixer-lat" value="3.19" step="0.01" min="0" oninput="calc()">
+    </div>
+  </div>
+
+  <!-- Hangsebesség -->
+  <div class="section">
+    <div class="section-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+      Hangsebesség paraméterek
+    </div>
+    <div class="field">
+      <label>
+        Hőmérséklet
+        <small>°C</small>
+      </label>
+      <input type="range" min="-10" max="45" value="20" step="0.5" id="temp-slider" oninput="syncTemp('slider')">
+      <input type="number" id="temp-input" value="20" step="0.5" style="width:72px" oninput="syncTemp('input')">
+    </div>
+    <div class="field">
+      <label>
+        Légnyomás
+        <small>hPa</small>
+      </label>
+      <input type="number" id="pressure-input" value="1013.25" step="0.5" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>
+        ms/méter — kézi felülírás
+        <small>ha üres, hőm. + nyomásból számolja</small>
+      </label>
+      <input type="number" id="msperm-manual" placeholder="auto" step="0.0001" oninput="calc()">
+    </div>
+  </div>
+
+  <!-- Formula -->
+  <div class="formula-box">
+    <div class="f-title">Számítás részletei</div>
+    <div class="formula-lines" id="formula-out">—</div>
+    <div class="hint">
+      v = 331.3 + 0.606 × T°C &nbsp;×&nbsp; √(P / 1013.25)<br>
+      PA delay = (X × ms/m) − keverő_latency − (nullpont × ms/m)
+    </div>
+  </div>
+
+</main>
+
+<footer>Stage Delay Calc — offline használható</footer>
+
+<script>
+function speedFromTP(t, p) {
+  return (331.3 + 0.606 * t) * Math.sqrt(p / 1013.25);
+}
+
+function syncTemp(src) {
+  const s = document.getElementById('temp-slider');
+  const i = document.getElementById('temp-input');
+  if (src === 'slider') i.value = s.value;
+  else s.value = Math.max(-10, Math.min(45, parseFloat(i.value) || 20));
+  calc();
+}
+
+function setStatus(msg, state) {
+  const el = document.getElementById('w-status');
+  el.textContent = msg;
+  el.className = 'weather-status' + (state ? ' ' + state : '');
+}
+
+function fetchWeather() {
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  btn.textContent = '…';
+  setStatus('GPS helyzet lekérése…');
+
+  if (!navigator.geolocation) {
+    setStatus('GPS nem elérhető.', 'err');
+    btn.disabled = false; btn.textContent = 'Újra';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude.toFixed(5);
+    const lon = pos.coords.longitude.toFixed(5);
+    setStatus('Időjárás lekérése (' + lat + ', ' + lon + ')…');
+
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,surface_pressure&timezone=auto')
+      .then(r => r.json())
+      .then(data => {
+        const t = data.current.temperature_2m;
+        const p = data.current.surface_pressure;
+        document.getElementById('temp-input').value = t;
+        document.getElementById('temp-slider').value = Math.max(-10, Math.min(45, t));
+        document.getElementById('pressure-input').value = p;
+        setStatus('✓ ' + t + '°C · ' + p + ' hPa — Open-Meteo', 'ok');
+        btn.textContent = 'Frissítés';
+        btn.disabled = false;
+        calc();
+      })
+      .catch(() => {
+        setStatus('API hiba. Ellenőrizd az internetkapcsolatot.', 'err');
+        btn.disabled = false; btn.textContent = 'Újra';
+      });
+  }, () => {
+    setStatus('GPS megtagadva — engedélyezd a helymeghatározást.', 'err');
+    btn.disabled = false; btn.textContent = '��jra';
+  }, { timeout: 10000 });
+}
+
+function calc() {
+  const X       = parseFloat(document.getElementById('x-dist').value) || 0;
+  const nullOff = parseFloat(document.getElementById('null-offset').value) || 0;
+  const mixLat  = parseFloat(document.getElementById('mixer-lat').value) || 0;
+  const t       = parseFloat(document.getElementById('temp-input').value) || 20;
+  const p       = parseFloat(document.getElementById('pressure-input').value) || 1013.25;
+  const manVal  = document.getElementById('msperm-manual').value;
+
+  const speed = speedFromTP(t, p);
+  const mspm  = manVal !== '' ? (parseFloat(manVal) || (1000/speed)) : 1000 / speed;
+
+  const acoustic = X * mspm;
+  const nullCorr = nullOff * mspm;
+  const result   = acoustic - mixLat - nullCorr;
+
+  document.getElementById('r-result').textContent  = result.toFixed(2);
+  document.getElementById('r-speed').textContent   = speed.toFixed(1);
+  document.getElementById('r-msperm').textContent  = mspm.toFixed(4);
+
+  const card = document.getElementById('card-primary');
+  if (result < 0) {
+    card.style.background = 'rgba(255,95,95,0.07)';
+    card.style.borderColor = 'rgba(255,95,95,0.25)';
+    document.getElementById('r-result').style.color = '#ff5f5f';
+  } else {
+    card.style.background = 'rgba(232,255,71,0.12)';
+    card.style.borderColor = 'rgba(232,255,71,0.25)';
+    document.getElementById('r-result').style.color = '#e8ff47';
+  }
+
+  const negNote = result < 0
+    ? '<span class="neg"> ← keverő latency > akusztikus késés</span>'
+    : '';
+
+  document.getElementById('formula-out').innerHTML =
+    'v = ' + speed.toFixed(3) + ' m/s &nbsp;|&nbsp; ms/m = ' + mspm.toFixed(5) + '<br>' +
+    'akusztikus: ' + X.toFixed(2) + ' × ' + mspm.toFixed(4) + ' = ' + acoustic.toFixed(3) + ' ms<br>' +
+    'nullpont: −' + nullOff.toFixed(2) + ' × ' + mspm.toFixed(4) + ' = −' + nullCorr.toFixed(3) + ' ms<br>' +
+    'keverő: −' + mixLat.toFixed(2) + ' ms<br>' +
+    '<strong>PA delay = ' + result.toFixed(2) + ' ms</strong>' + negNote;
+}
+
+calc();
+</script>
+</body>
+</html>
